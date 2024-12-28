@@ -10,11 +10,11 @@ data FileSystem = File String String | Root String [FileSystem]
     deriving(Show)
 
 mySystem :: FileSystem
-mySystem = Root "/" 
-    [ File "welcome.txt" "Welcome to the file system!", 
+mySystem = Root "/"
+    [ File "welcome.txt" "Welcome to the file system!",
       File "readme.md" "This is a basic file system structure.",
-      Root "projects" 
-        [ Root "project1" 
+      Root "projects"
+        [ Root "project1"
             [ File "main.cpp" "C++ project source code",
               File "README.md" "Project 1 documentation"
             ],
@@ -23,7 +23,7 @@ mySystem = Root "/"
               File "style.css" "CSS for the project page"
             ]
         ],
-      Root "documents" 
+      Root "documents"
         [ Root "work"
             [ File "report.docx" "Work report for the year",
               File "budget.xlsx" "Work budget for the year"
@@ -35,7 +35,7 @@ mySystem = Root "/"
         ],
       Root "archives"
         [ Root "2021"
-            [ File "old_report.pdf" "Report from 2021", 
+            [ File "old_report.pdf" "Report from 2021",
               File "old_budget.xlsx" "Budget from 2021"
             ],
           Root "2022"
@@ -55,7 +55,7 @@ headStack _ = Nothing
 pushStack :: a -> [a] -> [a]
 pushStack el st = st ++ [el]
 
-popStack :: [a] -> [a] 
+popStack :: [a] -> [a]
 popStack [x] = []
 popStack (x:xs) = x : popStack xs
 
@@ -65,25 +65,25 @@ topStack (x:xs) = topStack xs
 
 -- [FILE_SYSTEM_UTILS]
 
-isNameFolder :: String -> FileSystem -> Bool 
+isNameFolder :: String -> FileSystem -> Bool
 isNameFolder name1 (Root name2 _) = name1 == name2
 isNameFolder _ _ = False
 
-isNameFile :: String -> FileSystem -> Bool 
+isNameFile :: String -> FileSystem -> Bool
 isNameFile name1 (File name2 _) = name1 == name2
 isNameFile _ _ = False
 
-isFilePath :: String -> Bool 
-isFilePath ('/':_) = True 
-isFilePath _ = False 
+isFilePath :: String -> Bool
+isFilePath ('/':_) = True
+isFilePath _ = False
 
-isValidName :: (String -> FileSystem -> Bool) -> String -> FileSystem -> Bool 
+isValidName :: (String -> FileSystem -> Bool) -> String -> FileSystem -> Bool
 isValidName foo name1 (Root name2 xs) = name2 /= name1 && foldr (\x results -> foo name1 x || results) False xs
 isValidName _ _ _ = True
 
 -- [PARSERS]
 
-newtype Parser prs = Parser {runParser :: String -> Maybe (String, prs)} 
+newtype Parser prs = Parser {runParser :: String -> Maybe (String, prs)}
 
 -- ChatGPT: Make me an abstract Haskell data type definition. It should be Parser structure, 
 --          which has a container labeled Parser that holds a function runParser, which is a 
@@ -104,7 +104,7 @@ instance Applicative Parser where
     pure :: a -> Parser a
     pure x = Parser $ \y -> Just (y, x)
 
-    (<*>) :: Parser (a -> b) -> Parser a -> Parser b 
+    (<*>) :: Parser (a -> b) -> Parser a -> Parser b
     (Parser left) <*> (Parser right) = Parser $ \x -> do
         (x1, foo) <- left x
         (x2, el) <- right x1
@@ -115,14 +115,14 @@ instance Alternative Parser where
 
     empty :: Parser a
     empty = Parser $ const Nothing
-    
+
     (<|>) :: Parser a -> Parser a -> Parser a
     (Parser left) <|> (Parser right) = Parser $ \x -> left x <|> right x
 
 -- [INDIVIDUAL_PARSERS]
 
-charParser :: Char -> Parser Char
-charParser x = Parser foo
+parserForChar :: Char -> Parser Char
+parserForChar x = Parser foo
     where
         foo [] = Nothing
         foo (y:ys)
@@ -130,173 +130,173 @@ charParser x = Parser foo
           | otherwise = Nothing
 
 -- Explanation: traverse taken from hackage.haskell.org -> Data.Traversable
-stringParser :: String -> Parser String
-stringParser = traverse charParser
+parserForString :: String -> Parser String
+parserForString = traverse parserForChar
 
 -- Explanation: span taken from hoogle.haskell.org
-manyParser :: (Char -> Bool) -> Parser String
-manyParser foo = Parser $ \input -> let (singular, rest) = span foo input in Just (rest, singular)
+parserForMany :: (Char -> Bool) -> Parser String
+parserForMany foo = Parser $ \input -> let (singular, rest) = span foo input in Just (rest, singular)
 
 -- Explanation: isSpace from Data.Char
-whiteSpaceParser :: Parser String 
-whiteSpaceParser = manyParser isSpace
+parserForWhiteSpace :: Parser String
+parserForWhiteSpace = parserForMany isSpace
 
 -- Explanation: *> taken from hackage.haskell.org -> Control.Applicative
-slashParser :: Parser String
-slashParser = charParser '/' *> manyParser (/= '/')
+parserForSlash :: Parser String
+parserForSlash = parserForChar '/' *> parserForMany (/= '/')
 
 getNextDirectory :: String -> Maybe (String, String)
 getNextDirectory "" = Just ("", "")
-getNextDirectory x = runParser slashParser x
+getNextDirectory a = runParser parserForSlash a
 
-cdParser :: Parser String
-cdParser = stringParser "cd"
+parserForCd :: Parser String
+parserForCd = parserForString "cd"
 
-pwdParser :: Parser String 
-pwdParser = stringParser "pwd"
+parserForPwd :: Parser String
+parserForPwd = parserForString "pwd"
 
-lsParser :: Parser String 
-lsParser = stringParser "ls"
+parserForLs :: Parser String
+parserForLs = parserForString "ls"
 
-showParser :: Parser String 
-showParser = stringParser "show" 
+parserForShow :: Parser String
+parserForShow = parserForString "show"
 
-catParser :: Parser String 
-catParser = stringParser "cat"
+parserForCat :: Parser String
+parserForCat = parserForString "cat"
 
-quitParser :: Parser String 
-quitParser = stringParser "quit"
+parserForQuit :: Parser String
+parserForQuit = parserForString "quit"
 
-rmParser :: Parser String 
-rmParser = stringParser "rm"
-
--- Explanation: <|> read from stackoverflow.com/questions/26002415/what-does-haskells-operator-do
-directoryParser :: Parser String 
-directoryParser = stringParser "mkdir" <|> stringParser "mkfile"
-
--- Explanation: <* taken from hackage.haskell.org -> Control.Applicative
-wordParser :: String -> Maybe (String, String)
-wordParser = runParser $ manyParser (/= ' ') <* whiteSpaceParser
-
--- Explanation: <* taken from hackage.haskell.org -> Control.Applicative
-eofParser :: String -> Maybe (String, String) 
-eofParser = runParser $ manyParser (/= '~') <* charParser '~' <* whiteSpaceParser
+parserForRm :: Parser String
+parserForRm = parserForString "rm"
 
 -- Explanation: <|> read from stackoverflow.com/questions/26002415/what-does-haskells-operator-do
-cmdParser :: Parser String 
-cmdParser = cdParser <|> pwdParser <|> lsParser <|> catParser <|> rmParser <|> quitParser <|> directoryParser <|> showParser
+parserForMk :: Parser String
+parserForMk = parserForString "mkdir" <|> parserForString "mkfile"
 
 -- Explanation: <* taken from hackage.haskell.org -> Control.Applicative
-parseCmd :: String -> Maybe (String, String)
-parseCmd = runParser (cmdParser <* whiteSpaceParser)
+parserForWord :: String -> Maybe (String, String)
+parserForWord = runParser $ parserForMany (/= ' ') <* parserForWhiteSpace
+
+-- Explanation: <* taken from hackage.haskell.org -> Control.Applicative
+parserForEndFile :: String -> Maybe (String, String)
+parserForEndFile = runParser $ parserForMany (/= '~') <* parserForChar '~' <* parserForWhiteSpace
+
+-- Explanation: <|> read from stackoverflow.com/questions/26002415/what-does-haskells-operator-do
+parserForCommand :: Parser String
+parserForCommand = parserForCd <|> parserForPwd <|> parserForLs <|> parserForShow <|> parserForCat <|> parserForRm <|> parserForQuit <|> parserForMk
+
+-- Explanation: <* taken from hackage.haskell.org -> Control.Applicative
+parseCommand :: String -> Maybe (String, String)
+parseCommand = runParser (parserForCommand <* parserForWhiteSpace)
 
 -- [GET_FILE_SYSTEM_UTILS]
 
 getFile :: String -> [FileSystem] -> Maybe FileSystem
-getFile name xs = case filter (isNameFile name) xs of 
+getFile name xs = case filter (isNameFile name) xs of
         [] -> Nothing
         (x:_) -> Just x
 
 getFolder :: String -> FileSystem -> Maybe FileSystem
-getFolder name (Root _ xs) = case filter (isNameFolder name) xs of 
+getFolder name (Root _ xs) = case filter (isNameFolder name) xs of
         [] -> Nothing
         (x:_) -> Just x
 getFolder _ _ = Nothing
 
-getNameOfRoot :: FileSystem -> Maybe String 
+getNameOfRoot :: FileSystem -> Maybe String
 getNameOfRoot (Root name _) = Just name
-getNameOfRoot _ = Nothing 
+getNameOfRoot _ = Nothing
 
 getFileFromRoot :: String -> FileSystem -> Maybe FileSystem
 getFileFromRoot name (Root _ xs) = getFile name xs
-getFileFromRoot _ _ = Nothing 
+getFileFromRoot _ _ = Nothing
 
 getFileByDirectory :: String -> FileSystem -> Maybe FileSystem
 getFileByDirectory input x@(Root _ xs) = case getNextDirectory input of
         Just ("", file) -> getFile file xs
-        Just (rest, cur) -> case getFolder cur x of 
-            Nothing -> Nothing 
+        Just (rest, cur) -> case getFolder cur x of
+            Nothing -> Nothing
             Just curFolder -> getFileByDirectory rest curFolder
-getFileByDirectory _ _ = Nothing 
+getFileByDirectory _ _ = Nothing
 
 -- [ADD_&_REMOVE]
 
 -- Explanation: ChatGPT rewrote 'add'. Prompt was a frustrated "fix" and almost all of the code.
 add :: String -> FileSystem -> Maybe FileSystem -> Maybe FileSystem
-add path temp (Just old@(Root name xs)) = case getNextDirectory path of 
+add path temp (Just old@(Root name xs)) = case getNextDirectory path of
     Just ("", "") -> Just (Root name (temp : xs))
-    Just (rest, cur) -> case changeDirectories cur xs of 
-        Nothing -> Nothing 
+    Just (rest, cur) -> case changeDirectories cur xs of
+        Nothing -> Nothing
         Just directory@(Root path files) -> case add rest temp (Just directory) of
             Nothing -> Nothing
-            Just new@(Root dir xs) -> Just (changeEntity new old)
-    Nothing -> Nothing 
-add _ _ _ = Nothing 
+            Just new@(Root dir xs) -> Just (changeRoot new old)
+    Nothing -> Nothing
+add _ _ _ = Nothing
 
 addFile :: String -> String -> String -> Maybe FileSystem -> Maybe FileSystem
 addFile path name value = add path (File name value)
 
 addFolder :: String -> String -> Maybe FileSystem -> Maybe FileSystem
-addFolder path name = add path (Root name []) 
+addFolder path name = add path (Root name [])
 
 removeFileFromRootHelper :: String -> [FileSystem] -> [FileSystem]
 removeFileFromRootHelper name (x@(File otherName _) : xs)
     | name == otherName = xs
     | otherwise = x : removeFileFromRootHelper name xs
 removeFileFromRootHelper name (x : xss) = x : removeFileFromRootHelper name xss
-removeFileFromRootHelper _ [] = [] 
+removeFileFromRootHelper _ [] = []
 
 removeFileFromRoot :: String -> FileSystem -> FileSystem
 removeFileFromRoot name (Root name1 xs) = Root name1 (removeFileFromRootHelper name xs)
 removeFileFromRoot _ x = x
 
 removeFileFromPathHelper :: String -> FileSystem -> FileSystem
-removeFileFromPathHelper input root@(Root name xs) = case getNextDirectory input of 
+removeFileFromPathHelper input root@(Root name xs) = case getNextDirectory input of
     Just ("", fileName) -> removeFileFromRoot fileName root
-    Just(nextPath, curPath) -> case changeDirectories curPath xs of 
+    Just(nextPath, curPath) -> case changeDirectories curPath xs of
         Nothing -> root
         Just next -> removeFileFromPathHelper nextPath next
 removeFileFromPathHelper _ fileSystem = fileSystem
 
-removeFileFromPath :: String -> FileSystem -> FileSystem 
-removeFileFromPath input root@(Root _ _) = if isFilePath input then changeEntity (removeFileFromPathHelper input root) root else removeFileFromRoot input root
+removeFileFromPath :: String -> FileSystem -> FileSystem
+removeFileFromPath input root@(Root _ _) = if isFilePath input then changeRoot (removeFileFromPathHelper input root) root else removeFileFromRoot input root
 removeFileFromPath _ fileSystem = fileSystem
 
 -- [OTHER_FILE_SYSTEM_UTILS]
 
 fancyList :: [Maybe a] -> Maybe [a]
 fancyList [] = Just []
-fancyList ((Just x) : xs) = case fancyList xs of 
+fancyList ((Just x) : xs) = case fancyList xs of
         (Just result) -> Just (x : result)
         Nothing -> Nothing
 fancyList (Nothing : xs) = fancyList xs
 
 filesToString :: [FileSystem] -> [String]
 filesToString (Root name _ : xs) = foo xs : filesToString xs
-    where foo :: [FileSystem] -> String 
+    where foo :: [FileSystem] -> String
           foo (Root "/" _ : xss) = "/" ++ foo xss
           foo (Root name _ : xss) = "/" ++ name ++ foo xss
-          foo _ = "" 
+          foo _ = ""
 filesToString _ = []
 
 catFiles :: String -> FileSystem -> FileSystem -> Maybe FileSystem
 catFiles newName (File _ contents1) (File _ contents2) = Just $ File newName (contents1 ++ contents2)
 catFiles _ _ _ = Nothing
 
-changeDirectories :: String -> [FileSystem] -> Maybe FileSystem 
+changeDirectories :: String -> [FileSystem] -> Maybe FileSystem
 changeDirectories name xs = headStack $ filter (isNameFolder name) xs
 
-changeEntityHelper :: FileSystem -> [FileSystem] -> [FileSystem]
-changeEntityHelper new@(Root oldName oldXs) (old@(Root newName xss) : newXs)
+changeRootHelper :: FileSystem -> [FileSystem] -> [FileSystem]
+changeRootHelper new@(Root oldName oldXs) (old@(Root newName xss) : newXs)
         | oldName == newName  = new : newXs
-        | otherwise = Root newName (changeEntityHelper new xss) : changeEntityHelper new newXs
-changeEntityHelper new (old : newXs) = old : changeEntityHelper new newXs
-changeEntityHelper _ x = x
+        | otherwise = Root newName (changeRootHelper new xss) : changeRootHelper new newXs
+changeRootHelper new (old : newXs) = old : changeRootHelper new newXs
+changeRootHelper _ x = x
 
-changeEntity :: FileSystem -> FileSystem -> FileSystem
-changeEntity new old@(Root name xs) = case getNameOfRoot new of 
+changeRoot :: FileSystem -> FileSystem -> FileSystem
+changeRoot new old@(Root name xs) = case getNameOfRoot new of
         Nothing -> old
-        Just name1 -> if name1 == name then new else Root name $ changeEntityHelper new xs
+        Just name1 -> if name1 == name then new else Root name $ changeRootHelper new xs
 
 printFile :: FileSystem -> String
 printFile (File name content) = "file_name: " ++ name ++ "\ncontent: \n" ++ content ++ "\n"
@@ -307,133 +307,145 @@ printSystem ((Root "/" _) : xs) = "/" ++ printSystem xs
 printSystem ((Root n _) : xs)   = n ++ "/" ++ printSystem xs
 printSystem _ = ""
 
-printEntity :: FileSystem -> String 
-printEntity (Root n _) = "root: " ++ n ++ "\n"
-printEntity (File n _) = "file: " ++ n ++ "\n"
+printRoot :: FileSystem -> String
+printRoot (Root n _) = "root: " ++ n ++ "\n"
+printRoot (File n _) = "file: " ++ n ++ "\n"
 
 -- [MAIN_FUNCTIONS]
 
+-- [PWD]
+
+pwd :: [FileSystem] -> IO()
+pwd s = let system = printSystem s in
+    putStrLn ("path:\n" ++ system)
+
+-- [CD]
+
 cd :: String -> [FileSystem] -> Maybe [FileSystem]
 cd input xs = case getNextDirectory input of
-    Just ("", "")     -> Just xs
-    Just (rest, "..") -> case popStack xs of 
-        []   -> Nothing 
+    Just ("", "") -> Just xs
+    Just (rest, "..") -> case popStack xs of
+        [] -> Nothing
         back -> cd rest back
-    Just (rest, curr) -> case changeDirectories curr xs' of
-        Just res -> cd rest (pushStack res xs)
+    Just (rest, cur) -> case changeDirectories cur xs1 of
+        Just result -> cd rest (pushStack result xs)
         Nothing  -> Nothing
-    Nothing           -> Nothing 
- where syst@(Root name xs') = topStack xs
-
-mkdir :: String -> [FileSystem] -> Maybe [FileSystem]
-mkdir input syst = case wordParser input of 
-    Just ("", last)     -> case makeDir last syst of 
-        Nothing      -> Just syst
-        (Just res)   -> Just res
-    Just (rest', curr') -> case makeDir curr' syst of
-        Nothing      -> mkdir rest' syst
-        (Just syst') -> mkdir rest' syst'
- where
-     makeDir :: String -> [FileSystem] -> Maybe [FileSystem]
-     makeDir cInput cSystem = if isValidName isNameFolder cInput (topStack cSystem) then Nothing 
-     else let paths = zip cSystem (filesToString cSystem) in 
-            fancyList $ map (\(f, s) -> addFolder s cInput (Just f)) paths 
-
-mkFile :: String -> [FileSystem] -> Maybe [FileSystem]
-mkFile input syst = case wordParser input of 
-    Just (rest', fileName) -> case eofParser rest' of
-        Just(_, fileContent) -> if isValidName isNameFile fileName (topStack syst) then Nothing 
-        else let paths = zip syst (filesToString syst) in
-            fancyList $ map (\(f, s) -> addFile s fileName fileContent (Just f)) paths
-        Nothing -> Nothing 
     Nothing -> Nothing
+ where system@(Root name xs1) = topStack xs
 
-cat :: String -> [FileSystem] -> [FileSystem]
-cat = catHelper (File "" "") 
-    where
-        catHelper :: FileSystem -> String -> [FileSystem] -> [FileSystem] 
-        catHelper currFile input syst = 
-            case wordParser input of
-                Just (fileName, ">") -> case catFiles fileName (File "" "") currFile of
-                    Nothing -> syst 
-                    Just (File n' c') -> case mkFile (n' ++ " " ++ c' ++ "~") syst of
-                        Nothing -> syst
-                        Just res -> res
-                Just ("", "") -> syst
-                Just(rest, curr) -> if isFilePath curr then 
-                    case getFileByDirectory curr (head syst) of
-                        Nothing -> catHelper currFile rest syst
-                        Just file -> case catFiles "" file currFile of
-                            Nothing -> catHelper currFile rest syst
-                            Just resFile -> catHelper resFile rest syst
-                    else 
-                        case getFileFromRoot curr (topStack syst) of 
-                            Nothing -> catHelper currFile rest syst
-                            Just file -> case catFiles "" file currFile of
-                                Nothing -> catHelper currFile rest syst
-                                Just resFile -> catHelper resFile rest syst
-                Nothing -> syst 
+-- [LS]
 
-eval :: String -> [FileSystem] -> Maybe [FileSystem]
-eval input syst = case parseCmd input of
-    Nothing -> Nothing 
-    Just (rest, curr) -> case curr of 
-        "cd"     -> cd ("/" ++ rest) syst
-        "mkdir"  -> mkdir rest syst
-        "mkfile" -> mkFile rest syst
-        "rm"     -> Just $ removeFile rest syst
-        "cat"    -> Just $ cat rest syst
-        _        -> Nothing
+lsHelper :: String -> [FileSystem] -> Maybe [FileSystem]
+lsHelper input system = case parseCommand input of
+    Nothing -> Nothing
+    Just (rest, curr) -> case curr of
+        "cd" -> cd ("/" ++ rest) system
+        "mkdir" -> mkdir rest system
+        "mkfile" -> mkfile rest system
+        "rm" -> Just $ rm rest system
+        "cat" -> Just $ cat rest system
+        _ -> Nothing
 
-ls :: String -> Maybe FileSystem -> String 
-ls input (Just syst) = case eval ("cd" ++ input) [syst] of
-    (Just res) -> case topStack res of 
-        (Root _ xs) -> concatMap printEntity xs
-        _           -> ""
-    _          -> ""
+ls :: String -> Maybe FileSystem -> String
+ls input (Just system) = case lsHelper ("cd" ++ input) [system] of
+    (Just result) -> case topStack result of
+        (Root _ a) -> concatMap printRoot a
+        _ -> ""
+    _ -> ""
 ls _ _ = ""
 
-pwd :: [FileSystem] -> IO() 
-pwd xs = let system = printSystem xs in 
-    putStr $ "Path\n" ++ replicate (length system) '-' ++ "\n" ++ system ++ "\n"
+-- [CAT]
 
-showFile :: String -> FileSystem -> String 
-showFile name (Root _ xs) = case getFile name xs of
-    Nothing    -> "No such file\n"
-    (Just res) -> printFile res
-showFile _ _ = "Bad use of function showFile\n"
+catHelper :: FileSystem -> String -> [FileSystem] -> [FileSystem]
+catHelper cur input system = case parserForWord input of
+    Just (name, ">") -> case catFiles name (File "" "") cur of
+            Nothing -> system
+            Just (File name1 content1) -> case mkfile (name1 ++ " " ++ content1 ++ "~") system of
+                    Nothing -> system
+                    Just result -> result
+    Just ("", "") -> system
+    Just (rest, curr) -> if isFilePath curr then
+            case getFileByDirectory curr (head system) of
+                Nothing -> catHelper cur rest system
+                Just file -> case catFiles "" file cur of
+                        Nothing -> catHelper cur rest system
+                        Just result -> catHelper result rest system
+        else case getFileFromRoot curr (topStack system) of
+                Nothing -> catHelper cur rest system
+                Just file -> case catFiles "" file cur of
+                        Nothing -> catHelper cur rest system
+                        Just result -> catHelper result rest system
+    Nothing -> system
 
-removeFile :: String -> [FileSystem] -> [FileSystem]
-removeFile _ [] = [] -- this should never happen
-removeFile input xs = 
-    case wordParser input of
-        Just ("", last) -> let paths = zip xs (map (\x -> x ++ "/" ++ last) (filesToString xs)) in
-            map (\(f, s) -> removeFileFromPath s f) paths 
-        Just (rest, curr) -> let paths = zip xs (map (\x -> x ++ "/" ++ curr) (filesToString xs)) in 
-            removeFile rest $ map (\(f, s) -> removeFileFromPath s f) paths
-        Nothing -> xs
+cat :: String -> [FileSystem] -> [FileSystem]
+cat = catHelper (File "" "")
 
-repl :: [FileSystem] -> IO()
-repl xs = do
+rm :: String -> [FileSystem] -> [FileSystem]
+rm _ [] = []
+rm input xs = case parserForWord input of
+    Just ("", last) -> let paths = zip xs (map (\a -> a ++ "/" ++ last) (filesToString xs)) in
+        map (\(a, b) -> removeFileFromPath b a) paths
+    Just (rest, cur) -> let paths = zip xs (map (\a -> a ++ "/" ++ cur) (filesToString xs)) in
+        rm rest $ map (\(a, b) -> removeFileFromPath b a) paths
+    Nothing -> xs
+
+-- [UTILS]
+
+mkdirHelper :: String -> [FileSystem] -> Maybe [FileSystem]
+mkdirHelper input system = if isValidName isNameFolder input (topStack system)
+    then Nothing else let paths = zip system (filesToString system) in
+         fancyList $ map (\(a, b) -> addFolder b input (Just a)) paths
+
+mkdir :: String -> [FileSystem] -> Maybe [FileSystem]
+mkdir input system = case parserForWord input of
+    Just ("", last) -> case foo last system of
+        Nothing -> Just system
+        (Just result) -> Just result
+    Just (rest1, cur1) -> case foo cur1 system of
+        Nothing -> mkdir rest1 system
+        (Just system1) -> mkdir rest1 system1
+  where
+    foo :: String -> [FileSystem] -> Maybe [FileSystem]
+    foo = mkdirHelper
+
+mkfile :: String -> [FileSystem] -> Maybe [FileSystem]
+mkfile input system = case parserForWord input of
+    Just (rest, name) -> case parserForEndFile rest of
+        Just(_, content) -> if isValidName isNameFile name (topStack system) then Nothing
+        else let paths = zip system (filesToString system) in
+            fancyList $ map (\(a, b) -> addFile b name content (Just a)) paths
+        Nothing -> Nothing
+    Nothing -> Nothing
+
+showFS :: String -> FileSystem -> String
+showFS name (Root _ rest) = case getFile name rest of
+    Nothing -> "show::no_such_file\n"
+    (Just result) -> printFile result
+showFS _ _ = "show::error\n"
+
+-- [RUN]
+
+run :: [FileSystem] -> IO()
+run xs = do
     putStr $ printSystem xs ++ "^ "
     input <- getLine
-    case eval input xs of
-        Nothing -> case parseCmd input of
-            Just (_, "quit")  -> putStrLn "Goodbye! :D"
+    case lsHelper input xs of
+        Nothing -> case parseCommand input of
+            Just (_, "quit") -> putStrLn "Goodbye! :D"
             Just (_, "pwd") -> do pwd xs
-                                  repl xs
-            Just (rest, "ls") -> case rest of 
+                                  run xs
+            Just (rest, "ls") -> case rest of
                 ('/' : path)  -> do putStr $ ls path $ Just $ head xs
-                                    repl xs
+                                    run xs
                 _             -> do putStr $ ls rest $ Just $ topStack xs
-                                    repl xs
-            Just (l, "show") -> do putStr $ showFile l $ topStack xs
-                                   repl xs
-            _  -> repl xs
-        Just res -> repl res
+                                    run xs
+            Just (l, "show") -> do putStr $ showFS l $ topStack xs
+                                   run xs
+            _  -> run xs
+        Just result -> run result
 
 -- [RUNNER]
 
 main :: IO()
-main = repl [mySystem]
+main = run [mySystem]
 
