@@ -45,7 +45,7 @@ mySystem = Root "/"
     ]
 
 -- [STACK]
--- Explanation: Basic Data Structures implementation;
+-- Explanation: Basic Data Structures implementation, taken from Logic Programming 2022/2023;
 --              Renamed so not ambigious with built-in head & etc.
 
 headStack :: [a] -> Maybe a
@@ -85,11 +85,7 @@ isValidName _ _ _ = True
 
 newtype Parser prs = Parser {runParser :: String -> Maybe (String, prs)}
 
--- ChatGPT: Make me an abstract Haskell data type definition. It should be Parser structure, 
---          which has a container labeled Parser that holds a function runParser, which is a 
---          transformation process. The function runParser takes a string input and return: a 
---          tuple with a remaining string and parsed result and nothing - an empty state.
--- Explanation: Renamed most of the variables.
+-- Explanation: Read from and based on github.com/tsoding/haskell-json/commit/bafd97d96b792edd3e170525a7944b9f01de7e34
 
 -- Explanation: From hackage.haskell.org -> Data.Functor
 instance Functor Parser where
