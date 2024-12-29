@@ -221,11 +221,11 @@ getFileByDirectory _ _ = Nothing
 add :: String -> FileSystem -> Maybe FileSystem -> Maybe FileSystem
 add path temp (Just old@(Root name xs)) = case getNextDirectory path of
     Just ("", "") -> Just (Root name (temp : xs))
-    Just (rest, cur) -> case changeDirectories cur xs of
+    Just (rest, cur) -> case switchDirectories cur xs of
         Nothing -> Nothing
         Just directory@(Root path files) -> case add rest temp (Just directory) of
             Nothing -> Nothing
-            Just new@(Root dir xs) -> Just (changeRoot new old)
+            Just new@(Root dir xs) -> Just (switchRoot new old)
     Nothing -> Nothing
 add _ _ _ = Nothing
 
@@ -249,13 +249,13 @@ removeFileFromRoot _ x = x
 removeFileFromPathHelper :: String -> FileSystem -> FileSystem
 removeFileFromPathHelper input root@(Root name xs) = case getNextDirectory input of
     Just ("", fileName) -> removeFileFromRoot fileName root
-    Just(nextPath, curPath) -> case changeDirectories curPath xs of
+    Just(nextPath, curPath) -> case switchDirectories curPath xs of
         Nothing -> root
         Just next -> removeFileFromPathHelper nextPath next
 removeFileFromPathHelper _ fileSystem = fileSystem
 
 removeFileFromPath :: String -> FileSystem -> FileSystem
-removeFileFromPath input root@(Root _ _) = if isFilePath input then changeRoot (removeFileFromPathHelper input root) root else removeFileFromRoot input root
+removeFileFromPath input root@(Root _ _) = if isFilePath input then switchRoot (removeFileFromPathHelper input root) root else removeFileFromRoot input root
 removeFileFromPath _ fileSystem = fileSystem
 
 -- [OTHER_FILE_SYSTEM_UTILS]
@@ -276,23 +276,23 @@ filesToString (Root name _ : xs) = foo xs : filesToString xs
 filesToString _ = []
 
 catFiles :: String -> FileSystem -> FileSystem -> Maybe FileSystem
-catFiles newName (File _ contents1) (File _ contents2) = Just $ File newName (contents1 ++ contents2)
+catFiles newName (File _ contents1) (File _ contents2) = Just $ File newName (contents2 ++ contents1)
 catFiles _ _ _ = Nothing
 
-changeDirectories :: String -> [FileSystem] -> Maybe FileSystem
-changeDirectories name xs = headStack $ filter (isNameFolder name) xs
+switchDirectories :: String -> [FileSystem] -> Maybe FileSystem
+switchDirectories name xs = headStack $ filter (isNameFolder name) xs
 
-changeRootHelper :: FileSystem -> [FileSystem] -> [FileSystem]
-changeRootHelper new@(Root oldName oldXs) (old@(Root newName xss) : newXs)
+switchRootHelper :: FileSystem -> [FileSystem] -> [FileSystem]
+switchRootHelper new@(Root oldName oldXs) (old@(Root newName xss) : newXs)
         | oldName == newName  = new : newXs
-        | otherwise = Root newName (changeRootHelper new xss) : changeRootHelper new newXs
-changeRootHelper new (old : newXs) = old : changeRootHelper new newXs
-changeRootHelper _ x = x
+        | otherwise = Root newName (switchRootHelper new xss) : switchRootHelper new newXs
+switchRootHelper new (old : newXs) = old : switchRootHelper new newXs
+switchRootHelper _ x = x
 
-changeRoot :: FileSystem -> FileSystem -> FileSystem
-changeRoot new old@(Root name xs) = case getNameOfRoot new of
+switchRoot :: FileSystem -> FileSystem -> FileSystem
+switchRoot new old@(Root name xs) = case getNameOfRoot new of
         Nothing -> old
-        Just name1 -> if name1 == name then new else Root name $ changeRootHelper new xs
+        Just name1 -> if name1 == name then new else Root name $ switchRootHelper new xs
 
 printFile :: FileSystem -> String
 printFile (File name content) = "file_name: " ++ name ++ "\ncontent: \n" ++ content ++ "\n"
@@ -323,7 +323,7 @@ cd input xs = case getNextDirectory input of
     Just (rest, "..") -> case popStack xs of
         [] -> Nothing
         back -> cd rest back
-    Just (rest, cur) -> case changeDirectories cur xs1 of
+    Just (rest, cur) -> case switchDirectories cur xs1 of
         Just result -> cd rest (pushStack result xs)
         Nothing  -> Nothing
     Nothing -> Nothing
