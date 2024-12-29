@@ -298,14 +298,14 @@ printFile :: FileSystem -> String
 printFile (File name content) = "file_name: " ++ name ++ "\ncontent: \n" ++ content ++ "\n"
 printFile _ = "printFile::incorrect_error_type\n"
 
+printRoot :: FileSystem -> String
+printRoot (Root n _) = "root: " ++ n ++ "\n"
+printRoot (File n _) = "file: " ++ n ++ "\n"
+
 printSystem :: [FileSystem] -> String
 printSystem ((Root "/" _) : xs) = "/" ++ printSystem xs
 printSystem ((Root n _) : xs)   = n ++ "/" ++ printSystem xs
 printSystem _ = ""
-
-printRoot :: FileSystem -> String
-printRoot (Root n _) = "root: " ++ n ++ "\n"
-printRoot (File n _) = "file: " ++ n ++ "\n"
 
 -- [MAIN_FUNCTIONS]
 
