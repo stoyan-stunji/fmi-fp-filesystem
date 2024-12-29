@@ -49,19 +49,19 @@ mySystem = Root "/"
 --              Renamed so not ambigious with built-in head & etc.
 
 headStack :: [a] -> Maybe a
-headStack (x:xs) = Just x
+headStack (b:bs) = Just b
 headStack _ = Nothing
 
 pushStack :: a -> [a] -> [a]
 pushStack el st = st ++ [el]
 
 popStack :: [a] -> [a]
-popStack [x] = []
-popStack (x:xs) = x : popStack xs
+popStack [b] = []
+popStack (b:bs) = b : popStack bs
 
 topStack :: [a] -> a
-topStack [x] = x
-topStack (x:xs) = topStack xs
+topStack [b] = b
+topStack (b:bs) = topStack bs
 
 -- [FILE_SYSTEM_UTILS]
 
@@ -78,7 +78,7 @@ isFilePath ('/':_) = True
 isFilePath _ = False
 
 isValidName :: (String -> FileSystem -> Bool) -> String -> FileSystem -> Bool
-isValidName foo name1 (Root name2 xs) = name2 /= name1 && foldr (\x results -> foo name1 x || results) False xs
+isValidName foo name1 (Root name2 as) = name2 /= name1 && foldr (\x results -> foo name1 x || results) False as
 isValidName _ _ _ = True
 
 -- [PARSERS]
@@ -189,12 +189,12 @@ parseCommand = runParser (parserForCommand <* parserForWhiteSpace)
 -- [GET_FILE_SYSTEM_UTILS]
 
 getFile :: String -> [FileSystem] -> Maybe FileSystem
-getFile name xs = case filter (isNameFile name) xs of
+getFile name as = case filter (isNameFile name) as of
         [] -> Nothing
         (x:_) -> Just x
 
 getFolder :: String -> FileSystem -> Maybe FileSystem
-getFolder name (Root _ xs) = case filter (isNameFolder name) xs of
+getFolder name (Root _ as) = case filter (isNameFolder name) as of
         [] -> Nothing
         (x:_) -> Just x
 getFolder _ _ = Nothing
@@ -204,12 +204,12 @@ getNameOfRoot (Root name _) = Just name
 getNameOfRoot _ = Nothing
 
 getFileFromRoot :: String -> FileSystem -> Maybe FileSystem
-getFileFromRoot name (Root _ xs) = getFile name xs
+getFileFromRoot name (Root _ as) = getFile name as
 getFileFromRoot _ _ = Nothing
 
 getFileByDirectory :: String -> FileSystem -> Maybe FileSystem
-getFileByDirectory input x@(Root _ xs) = case getNextDirectory input of
-        Just ("", file) -> getFile file xs
+getFileByDirectory input x@(Root _ as) = case getNextDirectory input of
+        Just ("", file) -> getFile file as
         Just (rest, cur) -> case getFolder cur x of
             Nothing -> Nothing
             Just curFolder -> getFileByDirectory rest curFolder
@@ -219,13 +219,13 @@ getFileByDirectory _ _ = Nothing
 
 -- Explanation: ChatGPT rewrote 'add'. Prompt was a frustrated "fix" and almost all of the code.
 add :: String -> FileSystem -> Maybe FileSystem -> Maybe FileSystem
-add path temp (Just old@(Root name xs)) = case getNextDirectory path of
-    Just ("", "") -> Just (Root name (temp : xs))
-    Just (rest, cur) -> case switchDirectories cur xs of
+add path temp (Just old@(Root name as)) = case getNextDirectory path of
+    Just ("", "") -> Just (Root name (temp:as))
+    Just (rest, cur) -> case switchDirectories cur as of
         Nothing -> Nothing
         Just directory@(Root path files) -> case add rest temp (Just directory) of
             Nothing -> Nothing
-            Just new@(Root dir xs) -> Just (switchRoot new old)
+            Just new@(Root directory as) -> Just (switchRoot new old)
     Nothing -> Nothing
 add _ _ _ = Nothing
 
@@ -236,20 +236,20 @@ addFolder :: String -> String -> Maybe FileSystem -> Maybe FileSystem
 addFolder path name = add path (Root name [])
 
 removeFileFromRootHelper :: String -> [FileSystem] -> [FileSystem]
-removeFileFromRootHelper name (x@(File otherName _) : xs)
+removeFileFromRootHelper name (x@(File otherName _):xs)
     | name == otherName = xs
     | otherwise = x : removeFileFromRootHelper name xs
-removeFileFromRootHelper name (x : xss) = x : removeFileFromRootHelper name xss
+removeFileFromRootHelper name (x:bs) = x : removeFileFromRootHelper name bs
 removeFileFromRootHelper _ [] = []
 
 removeFileFromRoot :: String -> FileSystem -> FileSystem
-removeFileFromRoot name (Root name1 xs) = Root name1 (removeFileFromRootHelper name xs)
-removeFileFromRoot _ x = x
+removeFileFromRoot name (Root name1 as) = Root name1 (removeFileFromRootHelper name as)
+removeFileFromRoot _ rest = rest
 
 removeFileFromPathHelper :: String -> FileSystem -> FileSystem
-removeFileFromPathHelper input root@(Root name xs) = case getNextDirectory input of
+removeFileFromPathHelper input root@(Root name as) = case getNextDirectory input of
     Just ("", fileName) -> removeFileFromRoot fileName root
-    Just(nextPath, curPath) -> case switchDirectories curPath xs of
+    Just(nextPath, curPath) -> case switchDirectories curPath as of
         Nothing -> root
         Just next -> removeFileFromPathHelper nextPath next
 removeFileFromPathHelper _ fileSystem = fileSystem
@@ -262,16 +262,16 @@ removeFileFromPath _ fileSystem = fileSystem
 
 fancyList :: [Maybe a] -> Maybe [a]
 fancyList [] = Just []
-fancyList ((Just x) : xs) = case fancyList xs of
-        (Just result) -> Just (x : result)
+fancyList ((Just x):as) = case fancyList as of
+        (Just result) -> Just (x:result)
         Nothing -> Nothing
-fancyList (Nothing : xs) = fancyList xs
+fancyList (Nothing:as) = fancyList as
 
 filesToString :: [FileSystem] -> [String]
-filesToString (Root name _ : xs) = foo xs : filesToString xs
+filesToString (Root name _ : as) = foo as : filesToString as
     where foo :: [FileSystem] -> String
-          foo (Root "/" _ : xss) = "/" ++ foo xss
-          foo (Root name _ : xss) = "/" ++ name ++ foo xss
+          foo (Root "/" _ : bs) = "/" ++ foo bs
+          foo (Root name _ : bs) = "/" ++ name ++ foo bs
           foo _ = ""
 filesToString _ = []
 
@@ -280,19 +280,19 @@ catFiles newName (File _ contents1) (File _ contents2) = Just $ File newName (co
 catFiles _ _ _ = Nothing
 
 switchDirectories :: String -> [FileSystem] -> Maybe FileSystem
-switchDirectories name xs = headStack $ filter (isNameFolder name) xs
+switchDirectories name as = headStack $ filter (isNameFolder name) as
 
 switchRootHelper :: FileSystem -> [FileSystem] -> [FileSystem]
-switchRootHelper new@(Root oldName oldXs) (old@(Root newName xss) : newXs)
-        | oldName == newName  = new : newXs
-        | otherwise = Root newName (switchRootHelper new xss) : switchRootHelper new newXs
-switchRootHelper new (old : newXs) = old : switchRootHelper new newXs
+switchRootHelper new@(Root oldName oldas) (old@(Root newName bs) : newas)
+        | oldName == newName  = new : newas
+        | otherwise = Root newName (switchRootHelper new bs) : switchRootHelper new newas
+switchRootHelper new (old : newas) = old : switchRootHelper new newas
 switchRootHelper _ x = x
 
 switchRoot :: FileSystem -> FileSystem -> FileSystem
-switchRoot new old@(Root name xs) = case getNameOfRoot new of
+switchRoot new old@(Root name as) = case getNameOfRoot new of
         Nothing -> old
-        Just name1 -> if name1 == name then new else Root name $ switchRootHelper new xs
+        Just name1 -> if name1 == name then new else Root name $ switchRootHelper new as
 
 printFile :: FileSystem -> String
 printFile (File name content) = "file_name: " ++ name ++ "\ncontent: \n" ++ content ++ "\n"
@@ -303,8 +303,8 @@ printRoot (Root n _) = "root: " ++ n ++ "\n"
 printRoot (File n _) = "file: " ++ n ++ "\n"
 
 printSystem :: [FileSystem] -> String
-printSystem ((Root "/" _) : xs) = "/" ++ printSystem xs
-printSystem ((Root n _) : xs)   = n ++ "/" ++ printSystem xs
+printSystem ((Root "/" _):as) = "/" ++ printSystem as
+printSystem ((Root n _):as) = n ++ "/" ++ printSystem as
 printSystem _ = ""
 
 -- [MAIN_FUNCTIONS]
@@ -318,16 +318,16 @@ pwd s = let system = printSystem s in
 -- [CD]
 
 cd :: String -> [FileSystem] -> Maybe [FileSystem]
-cd input xs = case getNextDirectory input of
-    Just ("", "") -> Just xs
-    Just (rest, "..") -> case popStack xs of
+cd input as = case getNextDirectory input of
+    Just ("", "") -> Just as
+    Just (rest, "..") -> case popStack as of
         [] -> Nothing
         back -> cd rest back
-    Just (rest, cur) -> case switchDirectories cur xs1 of
-        Just result -> cd rest (pushStack result xs)
+    Just (rest, cur) -> case switchDirectories cur bs of
+        Just result -> cd rest (pushStack result as)
         Nothing  -> Nothing
     Nothing -> Nothing
- where system@(Root name xs1) = topStack xs
+ where system@(Root name bs) = topStack as
 
 -- [LS]
 
@@ -378,12 +378,12 @@ cat = catHelper (File "" "")
 
 rm :: String -> [FileSystem] -> [FileSystem]
 rm _ [] = []
-rm input xs = case parserForWord input of
-    Just ("", last) -> let paths = zip xs (map (\a -> a ++ "/" ++ last) (filesToString xs)) in
+rm input as = case parserForWord input of
+    Just ("", last) -> let paths = zip as (map (\a -> a ++ "/" ++ last) (filesToString as)) in
         map (\(a, b) -> removeFileFromPath b a) paths
-    Just (rest, cur) -> let paths = zip xs (map (\a -> a ++ "/" ++ cur) (filesToString xs)) in
+    Just (rest, cur) -> let paths = zip as (map (\a -> a ++ "/" ++ cur) (filesToString as)) in
         rm rest $ map (\(a, b) -> removeFileFromPath b a) paths
-    Nothing -> xs
+    Nothing -> as
 
 -- [UTILS]
 
@@ -422,22 +422,22 @@ showFS _ _ = "show::error\n"
 -- [RUN]
 
 run :: [FileSystem] -> IO()
-run xs = do
-    putStr $ printSystem xs ++ "[:] "
+run as = do
+    putStr $ printSystem as ++ "[:] "
     input <- getLine
-    case lsHelper input xs of
+    case lsHelper input as of
         Nothing -> case parseCommand input of
-            Just (_, "pwd") -> do pwd xs
-                                  run xs
+            Just (_, "pwd") -> do pwd as
+                                  run as
             Just (rest, "ls") -> case rest of
-                ('/' : path)  -> do putStr $ ls path $ Just $ head xs
-                                    run xs
-                _             -> do putStr $ ls rest $ Just $ topStack xs
-                                    run xs
-            Just (l, "show") -> do putStr $ showFS l $ topStack xs
-                                   run xs
+                ('/' : path)  -> do putStr $ ls path $ Just $ head as
+                                    run as
+                _             -> do putStr $ ls rest $ Just $ topStack as
+                                    run as
+            Just (l, "show") -> do putStr $ showFS l $ topStack as
+                                   run as
             Just (_, "quit") -> putStrLn "Goodbye! :D"
-            _  -> run xs
+            _  -> run as
         Just result -> run result
 
 -- [RUNNER]
