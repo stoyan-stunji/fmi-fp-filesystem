@@ -423,11 +423,10 @@ showFS _ _ = "show::error\n"
 
 run :: [FileSystem] -> IO()
 run xs = do
-    putStr $ printSystem xs ++ "^ "
+    putStr $ printSystem xs ++ "[:] "
     input <- getLine
     case lsHelper input xs of
         Nothing -> case parseCommand input of
-            Just (_, "quit") -> putStrLn "Goodbye! :D"
             Just (_, "pwd") -> do pwd xs
                                   run xs
             Just (rest, "ls") -> case rest of
@@ -437,6 +436,7 @@ run xs = do
                                     run xs
             Just (l, "show") -> do putStr $ showFS l $ topStack xs
                                    run xs
+            Just (_, "quit") -> putStrLn "Goodbye! :D"
             _  -> run xs
         Just result -> run result
 
