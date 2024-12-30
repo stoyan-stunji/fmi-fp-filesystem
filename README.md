@@ -45,13 +45,11 @@ topStack [1, 2, 3] ---> 3
 -	isNameFolder: Проверява дали даденото име съвпада с името на директория/папка. Първият аргумент е името, което се проверява. Вторият аргумент е файловата система. Резултатът е True, ако съответното име съвпада с името на папката, или False в противен случай.
 ```yaml
 isNameFolder "projects" (Root "projects" []) ---> True
-
 isNameFolder "documents" (File "resume.pdf" "My resume") ---> False
 ```
 - isNameFile: Проверява дали даденото име съвпада с името на файл. Първият аргумент е името, което се проверява. Вторият аргумент е файловата система. Резултатът е True, ако съответното име съвпада с името на файла, или False в противен случай.
 ```yaml
 isNameFile "resume.pdf" (File "resume.pdf" "My resume") ---> True
-
 isNameFile "welcome.txt" (Root "archives" []) ---> False
 ```
 - isFilePath: Проверява дали даден низ представлява път. Аргументът е низ, който трябва да се провери. Резултатът е True, ако низът започва със /, или False в противен случай.
@@ -60,7 +58,8 @@ isFilePath "/home/user/documents" ---> Резултат: True
 ```
 - isValidName: Проверява дали дадено име, на файл или папка, е валидно в контекста на текущата файловата система. Първият аргумент е функция (напр. isNameFile или isNameFolder), която проверява дали дадено име съществува. Вторият аргумент е името за проверка. Третият аргумент е файловата система. Резултатът е True, ако името не съвпада с името на текущата папка и не се среща сред елементите в нея. Ако името на текущата папка е равно на входното име, функцията връща False - името не е валидно, тъй като вече съществува. За останалите елементи в директорията се използва foldr от библиотеката на Haskell - входната функция проверява дали даден елемент съответства на входното име.
 ```yaml
-isValidName isNameFile "newfile.txt" (Root "documents" [File "resume.pdf" "My resume"]) ---> True т.е. файлът newfile.txt не съществува
+isValidName isNameFile "newfile.txt" (Root "documents" [File "resume.pdf" "My resume"]) ---> True
+т.е. файлът newfile.txt не съществува
 ``` 
 
 2.4. Анализатор (Parser)
@@ -76,17 +75,16 @@ uppercaseParser = fmap (map toUpper) wordParser
 - Applicative Parser: Позволява композиция на анализатори. Това е важно за комбиниране на анализатори, които правят разбор на различни части от входния низ. pure създава анализатор, който винаги връща дадена стойност X, без да се променя входния низ. (<*>) позволява прилагане на анализатор, който връща функция, върху друг анализатор, който връща аргумент. Левият анализатор анализира функция от тип a -> b. Десният анализатор анализира аргумент от тип a. Резултатът е нов анализатор, който връща резултат от тип b. Линк към Control.Applicative и Stackoverflow.
 ```yaml
 Анализатор за събиране на две числа:
-	addParser :: Parser (Int -> Int -> Int)
-	addParser = pure (+)
+addParser :: Parser (Int -> Int -> Int)
+addParser = pure (+)
 
 Използване на анализатора за събиране с аргументи:
-	sumParser :: Parser Int
-	sumParser = (+) <$> addParser <*> intParser <*> intParser
+sumParser :: Parser Int
+sumParser = (+) <$> addParser <*> intParser <*> intParser
 ```
 - Alternative Parser: Предоставя възможност за избор между два анализатора. Ако първият не успее, може да се опита вторият. empty е функция, която никога не успява и връща Nothing. (<|>) позволява да се комбинират два анализатора така, че ако единият не успее, да се опита вторият. Ако и той не успее, резултатът ще бъде Nothing. Линк към Stackoverflow.
 ```yaml
 Анализатор, който се опитва да направи разбор на числа, ако не успее, преминава към буквени низове.
-	numberOrWordParser :: Parser String
-	numberOrWordParser = many digit <|> many letter
-
+numberOrWordParser :: Parser String
+numberOrWordParser = many digit <|> many letter
 ``` 
