@@ -203,18 +203,18 @@ filesToString [Root "home" [], Root "user" []] – Резултат: ["/home", "
 
 # 4. Използвана литература:
 
-https://stackoverflow.com/questions/7203686/haskell-what-is-control-applicative-alternative-good-for
-https://stackoverflow.com/questions/41404647/how-to-implement-search-in-file-system-in-haskell?utm_source=chatgpt.com
-https://stackoverflow.com/questions/26002415/what-does-haskells-operator-do
-https://hoogle.haskell.org/?q=putStrLn
-https://hoogle.haskell.org/?hoogle=span
-https://hoogle.haskell.org/?hoogle=isSpace
-https://hoogle.haskell.org/?hoogle=getLine
-https://hackage.haskell.org/package/base-4.21.0.0/docs/Data-Traversable.html
-https://hackage.haskell.org/package/base-4.21.0.0/docs/Data-Functor.html
-https://hackage.haskell.org/package/base-4.21.0.0/docs/Control-Applicative.html
-https://github.com/YanaRGeorgieva/Logic-programming
-https://github.com/tsoding/haskell-json/commit/bafd97d96b792edd3e170525a7944b9f01de7e34
-https://developer.mozilla.org/en-US/docs/Glossary/Wrapper
-http://www.zvon.org/other/haskell/Outputprelude/foldr_f.html
-http://www.zvon.org/other/haskell/Outputprelude/filter_f.html
+- https://stackoverflow.com/questions/7203686/haskell-what-is-control-applicative-alternative-good-for
+- https://stackoverflow.com/questions/41404647/how-to-implement-search-in-file-system-in-haskell?utm_source=chatgpt.com
+- https://stackoverflow.com/questions/26002415/what-does-haskells-operator-do
+- https://hoogle.haskell.org/?q=putStrLn
+- https://hoogle.haskell.org/?hoogle=span
+- https://hoogle.haskell.org/?hoogle=isSpace
+- https://hoogle.haskell.org/?hoogle=getLine
+- https://hackage.haskell.org/package/base-4.21.0.0/docs/Data-Traversable.html
+- https://hackage.haskell.org/package/base-4.21.0.0/docs/Data-Functor.html
+- https://hackage.haskell.org/package/base-4.21.0.0/docs/Control-Applicative.html
+- https://github.com/YanaRGeorgieva/Logic-programming
+- https://github.com/tsoding/haskell-json/commit/bafd97d96b792edd3e170525a7944b9f01de7e34
+- https://developer.mozilla.org/en-US/docs/Glossary/Wrapper
+- http://www.zvon.org/other/haskell/Outputprelude/foldr_f.html
+- http://www.zvon.org/other/haskell/Outputprelude/filter_f.html
