@@ -155,3 +155,10 @@ filesToString [Root "home" [], Root "user" []] – Резултат: ["/home", "
 ```yaml
 Фигура 1
 ```
+
+- **LS**: Разделя входния низ чрез parseCommand и изпълнява съответната команда, като връща новото състояние на файловата система. Отпечатва информация за файловете в директорията *(Фигура 2)*.
+
+[![figure2.png](https://i.postimg.cc/J028nfFc/figure2.png)](https://postimg.cc/XBdm1z4p)
+```yaml
+Фиг,ра 2
+```
