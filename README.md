@@ -82,7 +82,7 @@ addParser = pure (+)
 sumParser :: Parser Int
 sumParser = (+) <$> addParser <*> intParser <*> intParser
 ```
-- **Alternative Parser**: Предоставя възможност за избор между два анализатора. Ако първият не успее, може да се опита вторият. empty е функция, която никога не успява и връща Nothing. (<|>) позволява да се комбинират два анализатора така, че ако единият не успее, да се опита вторият. Ако и той не успее, резултатът ще бъде Nothing. Линк към[Stackoverflow](https://stackoverflow.com/questions/7203686/haskell-what-is-control-applicative-alternative-good-for).
+- **Alternative Parser**: Предоставя възможност за избор между два анализатора. Ако първият не успее, може да се опита вторият. empty е функция, която никога не успява и връща Nothing. (<|>) позволява да се комбинират два анализатора така, че ако единият не успее, да се опита вторият. Ако и той не успее, резултатът ще бъде Nothing. Линк към [Stackoverflow](https://stackoverflow.com/questions/7203686/haskell-what-is-control-applicative-alternative-good-for).
 ```yaml
 Анализатор, който се опитва да направи разбор на числа, ако не успее, преминава към буквени низове.
 numberOrWordParser :: Parser String
