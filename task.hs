@@ -308,6 +308,7 @@ printFileSystem ((Root n _):as) = n ++ "/" ++ printFileSystem as
 printFileSystem _ = ""
 
 -- [MAIN_FUNCTIONS]
+-- Explanation: Part of the logic has been interpreted from GitHub -> stoychoX 
 
 -- [PWD]
 
@@ -441,3 +442,4 @@ run as = do
 
 main :: IO()
 main = run [mySystem]
+
